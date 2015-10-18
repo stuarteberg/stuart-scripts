@@ -14,7 +14,8 @@
 # Configure for kdiff3
 # (and hide warnings on about modalSession, from kdiff3 on OSX)
 MERGETOOL=${MERGETOOL-kdiff3}
-MERGECMD=${MERGECMD-'"${MERGETOOL}" "${LOCAL}" "${REMOTE}" -o "${MERGED}" 2>&1 | grep -iv modalSession'}
+MERGECMD=${MERGECMD-'"${MERGETOOL}" "${LOCAL}" "${REMOTE}" -o "${MERGED}"'\
+                    2>&1 | grep -iv modalSession}
 
 main() {
     check_for_errors "$@"
