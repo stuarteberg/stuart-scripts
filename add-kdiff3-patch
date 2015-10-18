@@ -1,10 +1,20 @@
 #!/bin/bash
 #
-# add-kdiff3-patch
+# add-with-mergetool
 # Author: Stuart Berg (http://github.com/stuarteberg)
 # 
 # This little script is like 'git add --patch', except that 
-# it launches kdiff3 to perform the merge.
+# it launches a merge-tool to perform the merge.
+
+# TODO: For now, this script hard-codes MERGETOOL and MERGECMD for kdiff3.
+#       Modify those variables for your own tool if you wish.
+#       In the future, it would be nice if we could somehow read  
+#       MERGETOOL and MERGECMD from the user's git-config.
+
+# Configure for kdiff3
+# (and hide warnings on about modalSession, from kdiff3 on OSX)
+MERGETOOL=${MERGETOOL-kdiff3}
+MERGECMD=${MERGECMD-'"${MERGETOOL}" "${LOCAL}" "${REMOTE}" -o "${MERGED}" 2>&1 | grep -iv modalSession'}
 
 main() {
     check_for_errors "$@"
@@ -12,14 +22,14 @@ main() {
 }
 
 check_for_errors() {
-    which kdiff3 > /dev/null
+    which "${MERGETOOL}" > /dev/null
     if [[ $? == 1 ]]; then
-        echo "Error: Can't find kdiff3" 1>&2
+        echo "Error: Can't find mergetool: '${MERGETOOL}'" 1>&2
         exit 1
     fi
     
     if [[ "$1" == "-h" ]]; then
-        echo "Usage: $0 [<pathspec>...]" 1>&2
+        echo "Usage: $(basename $0) [<pathspec>...]" 1>&2
         exit 0
     fi
 
@@ -49,32 +59,34 @@ process_all() {
             for f in "${changed_files[@]}"
             do
                 if [[ $startmsg_shown != "yes" ]]; then
-                    echo "Starting interactive add-patch.  Use Ctrl+C to stop early."
-                    echo "To skip a file, quit kdiff3 without saving."
+                    echo "Starting $(basename $0).  Use Ctrl+C to stop early."
+                    echo "To skip a file, quit ${MERGETOOL} without saving."
+                    echo
                     startmsg_shown="yes"
                 fi
                 
                 # This is where the magic happens.            
-                patch_file_with_kdiff3 "$f"
+                patch_file_and_add "$f"
             done
         ) || exit $? # exit early if loop body failed
     done
 }
 
-# This helper function opens kdiff3 for the user to merge a file,
+# This helper function launches the mergetool for a single file,
 #  and then adds it to the git index (if the user saved the new file).
-patch_file_with_kdiff3() {
+patch_file_and_add() {
     f="$1"
     git show :"$f" > "$f.from_index" # Copy from the index
     (
         set -e
         trap "echo && exit 130" INT # Ctrl+C should trigger abnormal exit
 
-        # Execute 2-file merge with kdiff3
-        # (and hide warnings on OS X about modalSession)
-        echo "Launching kdiff3 for '$f'."
-        kdiff3 "$f.from_index" "$f" -o "$f.to_add" 2>&1 \
-            | grep -iv "modalSession" 
+        # Execute 2-file merge
+        echo "Launching ${MERGETOOL} for '$f'."
+        LOCAL="$f.from_index"
+        REMOTE="$f"
+        MERGED="$f.to_add"
+        eval "${MERGECMD}"
         
         if [[ -e "$f.to_add" ]]; then
             mv "$f" "$f.from_working" # Backup original from working-tree
@@ -86,7 +98,7 @@ patch_file_with_kdiff3() {
     status=$?
     rm "$f.from_index" # Discard the old index version
     if [ $status == 130 ]; then
-        echo "User quit interactive add-patch early." 1>&2
+        echo "User interrupted." 1>&2
         exit $status
     elif [ $status != 0 ]; then
         echo "Error: Interactive add-patch stopped early!" 1>&2
