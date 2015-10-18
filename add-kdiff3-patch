@@ -1,0 +1,97 @@
+#!/bin/bash
+#
+# add-kdiff3-patch
+# Author: Stuart Berg (http://github.com/stuarteberg)
+# 
+# This little script is like 'git add --patch', except that 
+# it launches kdiff3 to perform the merge.
+
+main() {
+    check_for_errors "$@"
+    process_all "$@"
+}
+
+check_for_errors() {
+    which kdiff3 > /dev/null
+    if [[ $? == 1 ]]; then
+        echo "Error: Can't find kdiff3" 1>&2
+        exit 1
+    fi
+    
+    if [[ "$1" == "-h" ]]; then
+        echo "Usage: $0 [<pathspec>...]" 1>&2
+        exit 0
+    fi
+
+    # Exit early if we're not in a git repo
+    git status > /dev/null || exit $?
+}
+
+process_all() {
+    repo_toplevel=$(git rev-parse --show-toplevel)
+    
+    # If no args given, add everything (like 'git add -p')
+    if [[ $# == 0 ]]; then
+        set -- "$repo_toplevel"
+    fi
+    
+    # For each given file/directory...
+    args=( "$@" )
+    for arg in "${args[@]}"
+    do
+        # Find the modified file(s)
+        changed_files=( $(git diff --name-only -- "$arg") )
+        (
+            # Switch to toplevel, to easily handle 'git diff' output
+            cd "$repo_toplevel"
+        
+            # For each modified file...
+            for f in "${changed_files[@]}"
+            do
+                if [[ $startmsg_shown != "yes" ]]; then
+                    echo "Starting interactive add-patch.  Use Ctrl+C to stop early."
+                    echo "To skip a file, quit kdiff3 without saving."
+                    startmsg_shown="yes"
+                fi
+                
+                # This is where the magic happens.            
+                patch_file_with_kdiff3 "$f"
+            done
+        ) || exit $? # exit early if loop body failed
+    done
+}
+
+# This helper function opens kdiff3 for the user to merge a file,
+#  and then adds it to the git index (if the user saved the new file).
+patch_file_with_kdiff3() {
+    f="$1"
+    git show :"$f" > "$f.from_index" # Copy from the index
+    (
+        set -e
+        trap "echo && exit 130" INT # Ctrl+C should trigger abnormal exit
+
+        # Execute 2-file merge with kdiff3
+        # (and hide warnings on OS X about modalSession)
+        echo "Launching kdiff3 for '$f'."
+        kdiff3 "$f.from_index" "$f" -o "$f.to_add" 2>&1 \
+            | grep -iv "modalSession" 
+        
+        if [[ -e "$f.to_add" ]]; then
+            mv "$f" "$f.from_working" # Backup original from working-tree
+            mv "$f.to_add" "$f"       # Replace with patched version
+            git add "$f"              # Add to the index
+            mv "$f.from_working" "$f" # Restore the working-tree version
+        fi
+    )
+    status=$?
+    rm "$f.from_index" # Discard the old index version
+    if [ $status == 130 ]; then
+        echo "User quit interactive add-patch early." 1>&2
+        exit $status
+    elif [ $status != 0 ]; then
+        echo "Error: Interactive add-patch stopped early!" 1>&2
+        exit $status
+    fi
+}
+
+main "$@"
