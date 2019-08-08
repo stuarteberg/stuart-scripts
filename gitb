@@ -1,0 +1,47 @@
+#!/bin/bash
+
+grepargs="$@"
+
+grepargs=""
+grepflag=""
+for a in $@
+do
+    if [ ${a:0:1} = "-" ]
+    then
+	# Only one flag can be supplied.  Typically, you'll use -v
+	grepflag="$a"
+    elif [ "$grepargs" = "" ]
+    then
+	grepargs="$a"
+    else
+	grepargs="$grepargs\|$a"
+    fi
+done
+
+# Function to find the current branch
+parse_git_branch() {
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+}
+
+if [ "$grepargs" = "" ]
+then
+    grepargs=$(parse_git_branch)
+fi
+
+#echo "Finding branches:"
+#set -x
+branches=`git branch -a | sed s/"*"//g | grep -i $grepflag $grepargs | grep -v ">"`
+#set +x
+
+if [ "$branches" = "" ]
+then
+    echo "No matching branches"
+else
+  echo "Matching branches:"
+  for b in $branches
+  do
+    echo $b
+  done
+  gitk $branches --
+fi
+

@@ -1,0 +1,1 @@
+git branch | cut -c 3- | grep -v master | xargs git branch -d 2> /dev/null
