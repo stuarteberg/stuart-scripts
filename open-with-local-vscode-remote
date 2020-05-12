@@ -1,0 +1,103 @@
+#!/bin/sh
+
+#
+# This file contains the code and instructions to set up an iTerm2 "Trigger" from a
+# remote ssh session that will open up VSCode on your local machine to edit a
+# file on the remote server over ssh.
+#
+# Author: Stuart Berg
+#         https://github.com/stuarteberg
+#         bergs@janelia.hhmi.org
+
+# SETUP OVERVIEW
+# --------------
+# - Install the VS Code Remote Development Extension Pack
+# - Ideally, setup passwordless ssh access to the remote machines you want to access
+# - Place this script somewhere on your local machine (and make sure it's executable).
+# - Copy the localcode() shell function below into your remote machine's .bashrc
+# - Define the Trigger in iTerm2 as defined below.
+#
+# Notes:
+#   Docs for iTerm2 Triggers: https://iterm2.com/documentation-triggers.html
+#   Docs for VSCode Remote Extension: https://code.visualstudio.com/docs/remote/remote-overview
+#   - CLI: https://github.com/microsoft/vscode-remote-release/issues/585#issuecomment-536580102
+
+# iTerm2 Preferences Setup
+# ------------------------
+#
+# In your iTerm2 preferences, set up a Trigger (Profiles > Advanced > Triggers > Edit)
+#
+# Regular Expression:  .*ITERM-TRIGGER-open-with-local-vscode-remote ([^ ]+) ([^ ]+) ([^ ]+)
+#             Action:  Run Command...
+#         Parameters:  /path/to/this/script \1 \2 \3
+#
+# Tip: For additional feedback, try adding a duplicate entry with a "Post Notifcation" action.
+
+# HOW TO TEST
+# -----------
+#
+# NOTE: The new trigger will not be active for already-open terminal sessions.
+#       Open a new terminal after you add the trigger to your preferences.
+#
+# To test it, ssh into the remote machine, and try the 'localcode' function:
+#
+#   localcode .
+#   localcode /some/dir
+#   localcode /some/file
+#   localcode /some/file remote-machine-name
+#
+# If something is going wrong, inspect /tmp/iterm-vscode-trigger.log
+
+#
+# Put this in your remote ~/.bashrc
+#
+localcode() {
+    CMD=ITERM-TRIGGER-open-with-local-vscode-remote
+    MACHINE=${2-$(uname -n)}
+    FILENAME=${1-.}
+    if [[ -d ${FILENAME} ]]; then
+        FILENAME=$(cd $FILENAME; pwd)
+        FTYPE=directory
+    elif [[ -f ${FILENAME} ]]; then
+        DIRNAME=$(cd $(dirname $FILENAME); pwd)
+        FILENAME=${DIRNAME}/$(basename ${FILENAME})
+        FTYPE=file
+    else
+        1>&2 echo "Not a valid file or directory: ${FILENAME}"
+        exit 1
+    fi
+
+    echo ${CMD} ${FTYPE} ${MACHINE} ${FILENAME}
+}
+export -f localcode
+
+#
+# Copy this whole file onto your local machine, or at least the following lines.
+# Make sure it is executable (chmod +x /path/to/this/script)
+#
+trigger_vscode_remote_editing() {
+    VSCODE=/usr/local/bin/code
+    LOGFILE=/tmp/iterm-vscode-trigger.log
+    FTYPE=$1
+    MACHINE=$2
+    FILEPATH=$3
+
+
+    TS="["$(date "+%Y-%m-%d %H:%M:%S")"]"
+    echo "${TS} Triggered: ""$@" >> ${LOGFILE}
+
+    # https://github.com/microsoft/vscode-remote-release/issues/585#issuecomment-536580102
+    if [[ "${FTYPE}" == "directory" ]]; then
+        CMD="${VSCODE} --remote ssh-remote+${MACHINE} ${FILEPATH}"
+    elif [[ "${FTYPE}" == "file" ]]; then
+        CMD="${VSCODE} --file-uri vscode-remote://ssh-remote+${MACHINE}${FILEPATH}"
+    else
+        echo "${TS} Error: Bad arguments." >> ${LOGFILE}
+        exit 1
+    fi
+
+    echo "${TS} ${CMD}" >> ${LOGFILE}
+    ${CMD}
+}
+
+trigger_vscode_remote_editing "$@"
