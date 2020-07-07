@@ -27,9 +27,9 @@
 #
 # In your iTerm2 preferences, set up a Trigger (Profiles > Advanced > Triggers > Edit)
 #
-# Regular Expression:  .*ITERM-TRIGGER-open-with-local-vscode-remote ([^ ]+) ([^ ]+) ([^ ]+)
+# Regular Expression:  .*ITERM-TRIGGER-open-with-local-vscode-remote ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+)
 #             Action:  Run Command...
-#         Parameters:  /path/to/this/script \1 \2 \3
+#         Parameters:  /path/to/this/script \1 \2 \3 \4
 #
 # Tip: For additional feedback, try adding a duplicate entry with a "Post Notifcation" action.
 
@@ -51,7 +51,7 @@
 #
 # Put this in your remote ~/.bashrc
 #
-localcode() {
+localcode() (
     CMD=ITERM-TRIGGER-open-with-local-vscode-remote
     MACHINE=${2-$(uname -n)}
     FILENAME=${1-.}
@@ -67,15 +67,16 @@ localcode() {
         exit 1
     fi
 
-    echo ${CMD} ${FTYPE} ${MACHINE} ${FILENAME}
-}
+    # The last parameter is just given for convenient notifications
+    echo ${CMD} ${FTYPE} ${MACHINE} ${FILENAME} $(basename ${FILENAME})
+)
 export -f localcode
 
 #
 # Copy this whole file onto your local machine, or at least the following lines.
 # Make sure it is executable (chmod +x /path/to/this/script)
 #
-trigger_vscode_remote_editing() {
+trigger_vscode_remote_editing() (
     VSCODE=/usr/local/bin/code
     LOGFILE=/tmp/iterm-vscode-trigger.log
     FTYPE=$1
@@ -98,6 +99,6 @@ trigger_vscode_remote_editing() {
 
     echo "${TS} ${CMD}" >> ${LOGFILE}
     ${CMD}
-}
+)
 
 trigger_vscode_remote_editing "$@"
