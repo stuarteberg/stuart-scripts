@@ -20,7 +20,7 @@ conda_pkgs=(
     umap-learn
     ngspice
     matplotlib
-    "'pandas<1'"
+    'pandas<1'
     ipython
     jupyterlab
     ipywidgets
@@ -29,10 +29,12 @@ conda_pkgs=(
     line_profiler
     pytest
     google-cloud-sdk
+    'google-cloud-bigquery>=1.26.1'
+    pynrrd
+    dvid
     vol2mesh
     neuclease
     flyemflows
-    dvid
     neuprint-python
 )
 
@@ -40,7 +42,9 @@ conda_pkgs=(
 # even though neuroglancer itself isn't.
 ng_conda_pkgs=(
     sockjs-tornado
+    'tornado=5'  # sockjs-tornado isn't compatible with 6
     google-apitools
+    nodejs
 )
 
 # Some cloudvol dependencies aren't on conda-forge,
@@ -80,7 +84,7 @@ jupyter labextension install @jupyter-widgets/jupyterlab-manager
 # but I'll list the pip dependencies explicitly here for clarity's sake.
 pip_pkgs=(
     neuroglancer
-    cloud-volume
+    cloud-volume # 2.0.0
     'cloud-files>=0.9.2'
     'compressed-segmentation>=1.0.0'
     'fastremap>=1.9.2'
@@ -98,7 +102,17 @@ if [[ ! -z "${DEVELOP_MODE}" ]]; then
         vol2mesh
         neuclease
         flyemflows
+        neuprint-python
     )
+
+    # Explicitly install the dependencies,
+    # even though they're already installed.
+    # This ensures that they get entries in the environment specs,
+    # so they don't get automatically removed when we run 'conda update ...'.
+    # (conda tends to automatically remove packages that aren't explicitly required by your environment specs.)
+    for p in ${develop_pkgs[@]}; do
+        conda install -y -n ${ENV_NAME} --only-deps ${p}
+    done
 
     echo "Uninstalling the following packages re-installing them in 'develop' mode: ${develop_pkgs[@]}"
 
