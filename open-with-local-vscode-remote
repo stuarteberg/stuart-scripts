@@ -8,6 +8,7 @@
 # Author: Stuart Berg
 #         https://github.com/stuarteberg
 #         bergs@janelia.hhmi.org
+#         https://stackoverflow.com/questions/61699447
 
 # SETUP OVERVIEW
 # --------------
@@ -27,9 +28,9 @@
 #
 # In your iTerm2 preferences, set up a Trigger (Profiles > Advanced > Triggers > Edit)
 #
-# Regular Expression:  .*ITERM-TRIGGER-open-with-local-vscode-remote ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+)
+# Regular Expression:  .*ITERM-TRIGGER-open-with-local-vscode-remote ([^ ]+) ([^ ]+) (([^ ]+ ?)+)
 #             Action:  Run Command...
-#         Parameters:  /path/to/this/script \1 \2 \3 \4
+#         Parameters:  /path/to/this/script \1
 #
 # Tip: For additional feedback, try adding a duplicate entry with a "Post Notifcation" action.
 
@@ -52,23 +53,36 @@
 # Put this in your remote ~/.bashrc
 #
 localcode() (
+    # Tell zsh to use bash-style arrays
+    setopt ksh_arrays 2> /dev/null || true
+
     CMD=ITERM-TRIGGER-open-with-local-vscode-remote
-    MACHINE=${2-$(uname -n)}
-    FILENAME=${1-.}
-    if [[ -d ${FILENAME} ]]; then
-        FILENAME=$(cd $FILENAME; pwd)
-        FTYPE=directory
-    elif [[ -f ${FILENAME} ]]; then
-        DIRNAME=$(cd $(dirname $FILENAME); pwd)
-        FILENAME=${DIRNAME}/$(basename ${FILENAME})
-        FTYPE=file
-    else
-        1>&2 echo "Not a valid file or directory: ${FILENAME}"
-        exit 1
+    MACHINE=${LOCALCODE_MACHINE-login1}
+    FILENAMES=( "$@" )
+
+    if [[ ${#FILENAMES[@]} == 0 ]]; then
+        FILENAMES=.
     fi
 
-    # The last parameter is just given for convenient notifications
-    echo ${CMD} ${FTYPE} ${MACHINE} ${FILENAME} $(basename ${FILENAME})
+    if [[ ${#FILENAMES[@]} == 1 && -d ${FILENAMES[0]} ]]; then
+            FILENAMES[0]=$(cd ${FILENAMES[0]}; pwd)
+            FTYPE=directory
+    else
+        # Convert filenames to abspaths
+        for (( i=0; i < ${#FILENAMES[@]}; i++ )); do
+            FN=${FILENAMES[i]}
+            if [[ -f ${FN} ]]; then
+                DIRNAME=$(cd $(dirname ${FN}); pwd)
+                FILENAMES[i]=${DIRNAME}/$(basename ${FN})
+                FTYPE=file
+            else
+                1>&2 echo "Not a valid file: ${FN}"
+                exit 1
+            fi
+        done
+    fi
+
+    echo ${CMD} ${FTYPE} ${MACHINE} ${FILENAMES[@]}
 )
 export -f localcode
 
@@ -77,28 +91,34 @@ export -f localcode
 # Make sure it is executable (chmod +x /path/to/this/script)
 #
 trigger_vscode_remote_editing() (
+    # Tell zsh to use bash-style arrays
+    setopt ksh_arrays 2> /dev/null || true
+
     VSCODE=/usr/local/bin/code
     LOGFILE=/tmp/iterm-vscode-trigger.log
     FTYPE=$1
     MACHINE=$2
-    FILEPATH=$3
-
+    FILEPATHS=( "$@" )
+    FILEPATHS=( "${FILEPATHS[@]:2}" )
 
     TS="["$(date "+%Y-%m-%d %H:%M:%S")"]"
     echo "${TS} Triggered: ""$@" >> ${LOGFILE}
 
     # https://github.com/microsoft/vscode-remote-release/issues/585#issuecomment-536580102
     if [[ "${FTYPE}" == "directory" ]]; then
-        CMD="${VSCODE} --remote ssh-remote+${MACHINE} ${FILEPATH}"
+        CMD="${VSCODE} --remote ssh-remote+${MACHINE} ${FILEPATHS[@]}"
+        echo "${TS} ${CMD}" >> ${LOGFILE}
+        ${CMD}
     elif [[ "${FTYPE}" == "file" ]]; then
-        CMD="${VSCODE} --file-uri vscode-remote://ssh-remote+${MACHINE}${FILEPATH}"
+        for FN in ${FILEPATHS[@]}; do
+            CMD="${VSCODE} --file-uri vscode-remote://ssh-remote+${MACHINE}${FN}"
+            echo "${TS} ${CMD}" >> ${LOGFILE}
+            ${CMD}
+        done
     else
         echo "${TS} Error: Bad arguments." >> ${LOGFILE}
         exit 1
     fi
-
-    echo "${TS} ${CMD}" >> ${LOGFILE}
-    ${CMD}
 )
 
 trigger_vscode_remote_editing "$@"
