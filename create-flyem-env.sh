@@ -26,6 +26,7 @@ conda_pkgs=(
     ipywidgets
     bokeh
     hvplot
+    plotly
     line_profiler
     pytest
     google-cloud-sdk
@@ -79,6 +80,12 @@ set -x
 
 jupyter nbextension enable --py widgetsnbextension
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
+
+# plotly jupyterlab support
+# 
+jupyter labextension install jupyterlab-plotly@4.10.0
+jupyter labextension install @jupyter-widgets/jupyterlab-manager plotlywidget@4.10.0
+
 
 # These would all be pulled in by 'pip install neuroglancer cloud-volume',
 # but I'll list the pip dependencies explicitly here for clarity's sake.
