@@ -57,7 +57,7 @@ localcode() (
     setopt ksh_arrays 2> /dev/null || true
 
     CMD=ITERM-TRIGGER-open-with-local-vscode-remote
-    MACHINE=${LOCALCODE_MACHINE-login1}
+    MACHINE=${LOCALCODE_MACHINE-submit}
     FILENAMES=( "$@" )
 
     if [[ ${#FILENAMES[@]} == 0 ]]; then
