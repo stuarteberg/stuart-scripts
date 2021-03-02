@@ -42,8 +42,8 @@ conda_pkgs=(
 # neuroglancer dependencies are all available via conda,
 # even though neuroglancer itself isn't.
 ng_conda_pkgs=(
-    sockjs-tornado
-    'tornado=5'  # sockjs-tornado isn't compatible with 6
+    sockjs-tornado # v1.0.6 is available via conda (defaults channel), but v1.0.7 is only available via pip at the moment
+    'tornado=5'  # sockjs-tornado v1.0.6 isn't compatible with 6
     google-apitools
     nodejs
 )
