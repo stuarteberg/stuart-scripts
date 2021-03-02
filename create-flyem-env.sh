@@ -70,7 +70,9 @@ cloudvol_conda_pkgs=(
 )
 
 conda create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${conda_pkgs[@]} ${ng_conda_pkgs} ${cloudvol_conda_pkgs[@]}
-conda install -y -n ${ENV_NAME} $(ls ${WORKSPACE}/stuart-credentials/pkgs/stuart-credentials-*.tar.bz2 | tail -n1)
+
+# This is related to my personal credentials files.  Not portable!
+#conda install -y -n ${ENV_NAME} $(ls ${WORKSPACE}/stuart-credentials/pkgs/stuart-credentials-*.tar.bz2 | tail -n1)
 
 set +x
 # https://github.com/conda/conda/issues/7980#issuecomment-492784093
@@ -118,7 +120,7 @@ if [[ ! -z "${DEVELOP_MODE}" ]]; then
     # so they don't get automatically removed when we run 'conda update ...'.
     # (conda tends to automatically remove packages that aren't explicitly required by your environment specs.)
     for p in ${develop_pkgs[@]}; do
-        conda install -y -n ${ENV_NAME} --only-deps ${p}
+        conda install -y -n ${ENV_NAME} --only-deps -c conda-forge ${p}
     done
 
     echo "Uninstalling the following packages re-installing them in 'develop' mode: ${develop_pkgs[@]}"
