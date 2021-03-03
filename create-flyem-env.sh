@@ -120,7 +120,7 @@ if [[ ! -z "${DEVELOP_MODE}" ]]; then
     # so they don't get automatically removed when we run 'conda update ...'.
     # (conda tends to automatically remove packages that aren't explicitly required by your environment specs.)
     for p in ${develop_pkgs[@]}; do
-        conda install -y -n ${ENV_NAME} --only-deps -c conda-forge ${p}
+        conda install -y -n ${ENV_NAME} --only-deps -c flyem-forge -c conda-forge ${p}
     done
 
     echo "Uninstalling the following packages re-installing them in 'develop' mode: ${develop_pkgs[@]}"
