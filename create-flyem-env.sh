@@ -11,32 +11,36 @@ set -e
 WORKSPACE=/Users/bergs/workspace
 ENV_NAME=flyem
 DEVELOP_MODE=1
+CORE_ONLY=0
 
 PYTHON_VERSION=3.7
 
-conda_pkgs=(
+core_conda_pkgs=(
     python=${PYTHON_VERSION}
-    graph-tool=2.33
-    umap-learn
-    ngspice
-    matplotlib
-    'pandas<1'
     ipython
     jupyterlab
+    matplotlib
     ipywidgets
     bokeh
     hvplot
+    'pandas<1'
+    vol2mesh
+    'neuclease>=0.4.post128'
+    flyemflows
+    neuprint-python
+    dvid
+    pytest
+)
+
+optional_conda_pkgs=(
+    graph-tool=2.33
+    umap-learn
+    ngspice
     plotly
     line_profiler
-    pytest
     google-cloud-sdk
     'google-cloud-bigquery>=1.26.1'
     pynrrd
-    dvid
-    vol2mesh
-    neuclease
-    flyemflows
-    neuprint-python
 )
 
 # neuroglancer dependencies are all available via conda,
@@ -69,7 +73,13 @@ cloudvol_conda_pkgs=(
     zstandard
 )
 
-conda create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${conda_pkgs[@]} ${ng_conda_pkgs} ${cloudvol_conda_pkgs[@]}
+if [[ ${CORE_ONLY} == "1" ]]; then
+    conda create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]}
+    #mamba create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]}
+else
+    conda create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs} ${cloudvol_conda_pkgs[@]}
+    #mamba create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs} ${cloudvol_conda_pkgs[@]}
+fi
 
 # This is related to my personal credentials files.  Not portable!
 #conda install -y -n ${ENV_NAME} $(ls ${WORKSPACE}/stuart-credentials/pkgs/stuart-credentials-*.tar.bz2 | tail -n1)
@@ -83,11 +93,14 @@ set -x
 jupyter nbextension enable --py widgetsnbextension
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 
-# plotly jupyterlab support
-# 
-jupyter labextension install jupyterlab-plotly@4.10.0
-jupyter labextension install @jupyter-widgets/jupyterlab-manager plotlywidget@4.10.0
-
+if [[ ${CORE_ONLY} == "1" ]]; then
+    echo "Skipping plotly extensions"
+else
+    # plotly jupyterlab support
+    #
+    jupyter labextension install jupyterlab-plotly@4.10.0
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager plotlywidget@4.10.0
+fi
 
 # These would all be pulled in by 'pip install neuroglancer cloud-volume',
 # but I'll list the pip dependencies explicitly here for clarity's sake.
@@ -103,7 +116,11 @@ pip_pkgs=(
     python-jsonschema-objects
 )
 
-pip install ${pip_pkgs[@]}
+if [[ ${CORE_ONLY} == "1" ]]; then
+    echo "Skipping optional pip installs, including neuroglancer"
+else
+    pip install ${pip_pkgs[@]}
+fi
 
 if [[ ! -z "${DEVELOP_MODE}" ]]; then
 
