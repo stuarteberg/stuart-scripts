@@ -9,31 +9,34 @@ set -x
 set -e
 
 WORKSPACE=/Users/bergs/workspace
-ENV_NAME=flyem
-DEVELOP_MODE=1
+ENV_NAME=flyem-june
+DEVELOP_MODE=0
 CORE_ONLY=0
+CLOUDVOL=0
+INSTALLER=mamba
 
 PYTHON_VERSION=3.7
 
 core_conda_pkgs=(
-    python=${PYTHON_VERSION}
+    "python=${PYTHON_VERSION}"
     ipython
     jupyterlab
     matplotlib
     ipywidgets
     bokeh
     hvplot
-    'pandas<1'
-    vol2mesh
-    'neuclease>=0.4.post128'
-    flyemflows
-    neuprint-python
-    dvid
+    pandas
     pytest
+    vol2mesh
+    'libdvid-cpp>=0.3.post116'
+    'neuclease>=0.4.post243'
+    'flyemflows>=0.5.post.dev424'
+    'neuprint-python>=0.4.14'
+    #dvid
 )
 
 optional_conda_pkgs=(
-    graph-tool=2.33
+    'graph-tool>=2.42'
     umap-learn
     ngspice
     plotly
@@ -46,8 +49,8 @@ optional_conda_pkgs=(
 # neuroglancer dependencies are all available via conda,
 # even though neuroglancer itself isn't.
 ng_conda_pkgs=(
-    sockjs-tornado # v1.0.6 is available via conda (defaults channel), but v1.0.7 is only available via pip at the moment
-    'tornado=5'  # sockjs-tornado v1.0.6 isn't compatible with 6
+    sockjs-tornado # v1.0.7 is available via flyem-forge (and soon conda-forge)
+    tornado
     google-apitools
     nodejs
 )
@@ -74,11 +77,11 @@ cloudvol_conda_pkgs=(
 )
 
 if [[ ${CORE_ONLY} == "1" ]]; then
-    conda create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]}
-    #mamba create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]}
+    ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]}
+elif [[ ${CLOUDVOL} == "1" ]]; then
+    ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs} ${cloudvol_conda_pkgs[@]}
 else
-    conda create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs} ${cloudvol_conda_pkgs[@]}
-    #mamba create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs} ${cloudvol_conda_pkgs[@]}
+    ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs}
 fi
 
 # This is related to my personal credentials files.  Not portable!
@@ -98,8 +101,8 @@ if [[ ${CORE_ONLY} == "1" ]]; then
 else
     # plotly jupyterlab support
     #
-    jupyter labextension install jupyterlab-plotly@4.10.0
-    jupyter labextension install @jupyter-widgets/jupyterlab-manager plotlywidget@4.10.0
+    jupyter labextension install jupyterlab-plotly
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager plotlywidget
 fi
 
 # These would all be pulled in by 'pip install neuroglancer cloud-volume',
@@ -137,7 +140,7 @@ if [[ ! -z "${DEVELOP_MODE}" ]]; then
     # so they don't get automatically removed when we run 'conda update ...'.
     # (conda tends to automatically remove packages that aren't explicitly required by your environment specs.)
     for p in ${develop_pkgs[@]}; do
-        conda install -y -n ${ENV_NAME} --only-deps -c flyem-forge -c conda-forge ${p}
+        ${INSTALLER} install -y -n ${ENV_NAME} --only-deps -c flyem-forge -c conda-forge ${p}
     done
 
     echo "Uninstalling the following packages re-installing them in 'develop' mode: ${develop_pkgs[@]}"
