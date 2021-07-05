@@ -109,15 +109,20 @@ fi
 # but I'll list the pip dependencies explicitly here for clarity's sake.
 pip_pkgs=(
     neuroglancer
-    cloud-volume # 2.0.0
-    'cloud-files>=0.9.2'
-    'compressed-segmentation>=1.0.0'
-    'fastremap>=1.9.2'
-    'fpzip>=1.1.3'
-    DracoPy
-    posix-ipc
-    python-jsonschema-objects
 )
+
+if [[ "${CLOUDVOL}" == "1" ]]; then
+    pip_pkgs+=(
+        cloud-volume # 2.0.0
+        'cloud-files>=0.9.2'
+        'compressed-segmentation>=1.0.0'
+        'fastremap>=1.9.2'
+        'fpzip>=1.1.3'
+        DracoPy
+        posix-ipc
+        python-jsonschema-objects
+    )
+fi
 
 if [[ ${CORE_ONLY} == "1" ]]; then
     echo "Skipping optional pip installs, including neuroglancer"
