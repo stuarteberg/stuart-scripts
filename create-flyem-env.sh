@@ -41,7 +41,7 @@ optional_conda_pkgs=(
     ngspice
     plotly
     line_profiler
-    google-cloud-sdk
+    'google-cloud-sdk'
     'google-cloud-bigquery>=1.26.1'
     pynrrd
 )
@@ -49,9 +49,9 @@ optional_conda_pkgs=(
 # neuroglancer dependencies are all available via conda,
 # even though neuroglancer itself isn't.
 ng_conda_pkgs=(
-    sockjs-tornado # v1.0.7 is available via flyem-forge (and soon conda-forge)
+    'sockjs-tornado' # v1.0.7 is available via flyem-forge (and soon conda-forge)
     tornado
-    google-apitools
+    'google-apitools'
     nodejs
 )
 
@@ -79,9 +79,9 @@ cloudvol_conda_pkgs=(
 if [[ ${CORE_ONLY} == "1" ]]; then
     ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]}
 elif [[ ${CLOUDVOL} == "1" ]]; then
-    ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs} ${cloudvol_conda_pkgs[@]}
+    ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs[@]} ${cloudvol_conda_pkgs[@]}
 else
-    ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs}
+    ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs[@]}
 fi
 
 # This is related to my personal credentials files.  Not portable!
