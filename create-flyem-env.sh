@@ -21,6 +21,7 @@ core_conda_pkgs=(
     "python=${PYTHON_VERSION}"
     ipython
     jupyterlab
+    nodejs
     matplotlib
     ipywidgets
     bokeh
