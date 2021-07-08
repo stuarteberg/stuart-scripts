@@ -4,12 +4,13 @@
 # 2020-08-14
 # Here's how to create my flyem development environment from scratch.
 #
+# Updated 2021-07
 
 set -x
 set -e
 
 WORKSPACE=/Users/bergs/workspace
-ENV_NAME=flyem-june
+ENV_NAME=flyem
 DEVELOP_MODE=0
 CORE_ONLY=0
 CLOUDVOL=0
@@ -77,9 +78,9 @@ cloudvol_conda_pkgs=(
     zstandard
 )
 
-if [[ ${CORE_ONLY} == "1" ]]; then
+if [[ ! -z "${CORE_ONLY}" && ${CORE_ONLY} != "0" ]]; then
     ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]}
-elif [[ ${CLOUDVOL} == "1" ]]; then
+elif [[ ! -z "${CLOUDVOL}" && ${CLOUDVOL} != "0" ]]; then
     ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs[@]} ${cloudvol_conda_pkgs[@]}
 else
     ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs[@]}
@@ -97,7 +98,7 @@ set -x
 jupyter nbextension enable --py widgetsnbextension
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 
-if [[ ${CORE_ONLY} == "1" ]]; then
+if [[ ! -z "${CORE_ONLY}" && ${CORE_ONLY} != "0" ]]; then
     echo "Skipping plotly extensions"
 else
     # plotly jupyterlab support
@@ -112,7 +113,7 @@ pip_pkgs=(
     neuroglancer
 )
 
-if [[ "${CLOUDVOL}" == "1" ]]; then
+if [[ ! -z "${CLOUDVOL}" && ${CLOUDVOL} != "0" ]]; then
     pip_pkgs+=(
         cloud-volume # 2.0.0
         'cloud-files>=0.9.2'
@@ -125,13 +126,13 @@ if [[ "${CLOUDVOL}" == "1" ]]; then
     )
 fi
 
-if [[ ${CORE_ONLY} == "1" ]]; then
+if [[ ! -z "${CORE_ONLY}" && ${CORE_ONLY} != "0" ]]; then
     echo "Skipping optional pip installs, including neuroglancer"
 else
     pip install ${pip_pkgs[@]}
 fi
 
-if [[ ! -z "${DEVELOP_MODE}" ]]; then
+if [[ ! -z "${DEVELOP_MODE}" && ${DEVELOP_MODE} != "0" ]]; then
 
     develop_pkgs=(
         vol2mesh
