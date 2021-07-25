@@ -26,14 +26,16 @@ core_conda_pkgs=(
     matplotlib
     ipywidgets
     bokeh
+    jupyter_bokeh
     hvplot
     pandas
     pytest
-    vol2mesh
-    'libdvid-cpp>=0.3.post116'
+    'vol2mesh>=0.1.post10'
+    'libdvid-cpp>=0.3.post117'
     'neuclease>=0.4.post243'
     'flyemflows>=0.5.post.dev424'
     'neuprint-python>=0.4.14'
+    'lemon=1.3.1=he9d42e9_3' # https://github.com/conda-forge/lemon-feedstock/issues/23
     #dvid
 )
 
@@ -111,6 +113,7 @@ fi
 # but I'll list the pip dependencies explicitly here for clarity's sake.
 pip_pkgs=(
     neuroglancer
+    tensorstore
 )
 
 if [[ ! -z "${CLOUDVOL}" && ${CLOUDVOL} != "0" ]]; then

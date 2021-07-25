@@ -2,6 +2,7 @@
 
 if [[ $1 == '-r' ]]; then
   1>&2 echo ""
+  echo "$0"
   1>&2 echo "*********************** BAD BOY **************************"
   1>&2 echo "* Never use 'cp -r'; use 'cp -R' instead.                *"
   1>&2 echo "* If you really meant 'cp -r', you're probably wrong,    *"
