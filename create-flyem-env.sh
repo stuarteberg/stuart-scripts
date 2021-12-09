@@ -11,12 +11,18 @@ set -e
 
 WORKSPACE=/Users/bergs/workspace
 ENV_NAME=flyem
-DEVELOP_MODE=0
+DEVELOP_MODE=1
 CORE_ONLY=0
 CLOUDVOL=0
 INSTALLER=mamba
 
 PYTHON_VERSION=3.7
+
+if [[ $(uname) == "Darwin" ]]; then
+    LEMON_BUILD=h1fadc39_3
+else
+    LEMON_BUILD=he9d42e9_3
+fi
 
 core_conda_pkgs=(
     "python=${PYTHON_VERSION}"
@@ -29,18 +35,19 @@ core_conda_pkgs=(
     jupyter_bokeh
     hvplot
     pandas
+    feather-format
     pytest
     'vol2mesh>=0.1.post10'
     'libdvid-cpp>=0.3.post117'
     'neuclease>=0.4.post243'
     'flyemflows>=0.5.post.dev424'
     'neuprint-python>=0.4.14'
-    'lemon=1.3.1=he9d42e9_3' # https://github.com/conda-forge/lemon-feedstock/issues/23
+    "lemon=1.3.1=${LEMON_BUILD}" # https://github.com/conda-forge/lemon-feedstock/issues/23
     #dvid
 )
 
 optional_conda_pkgs=(
-    'graph-tool>=2.42'
+    'graph-tool>=2.43'
     umap-learn
     ngspice
     plotly
@@ -48,6 +55,10 @@ optional_conda_pkgs=(
     'google-cloud-sdk'
     'google-cloud-bigquery>=1.26.1'
     pynrrd
+    cython
+    anytree
+    pot
+    gensim
 )
 
 # neuroglancer dependencies are all available via conda,
@@ -114,6 +125,7 @@ fi
 pip_pkgs=(
     neuroglancer
     tensorstore
+    graspologic
 )
 
 if [[ ! -z "${CLOUDVOL}" && ${CLOUDVOL} != "0" ]]; then
