@@ -52,12 +52,18 @@
 #
 # Put this in your remote ~/.bashrc
 #
+
+# Set this to the name of your remote machine,
+# which will be serving the files you want to edit.
+# (In my case, the machine is named 'submit'.)
+DEFAULT_REMOTE_MACHINE_FOR_VSCODE=submit
+
 localcode() (
     # Tell zsh to use bash-style arrays
     setopt ksh_arrays 2> /dev/null || true
 
     CMD=ITERM-TRIGGER-open-with-local-vscode-remote
-    MACHINE=${LOCALCODE_MACHINE-submit}
+    MACHINE=${LOCALCODE_MACHINE-${DEFAULT_REMOTE_MACHINE_FOR_VSCODE}}
     FILENAMES=( "$@" )
 
     if [[ ${#FILENAMES[@]} == 0 ]]; then
