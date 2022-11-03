@@ -4,25 +4,24 @@
 # 2020-08-14
 # Here's how to create my flyem development environment from scratch.
 #
-# Updated 2021-07
+# Updated 2022-11
 
 set -x
 set -e
 
 WORKSPACE=/Users/bergs/workspace
-ENV_NAME=flyem
+ENV_NAME=flyem-310
+CONDA_CMD=create
+#CONDA_CMD=install
+
 DEVELOP_MODE=1
 CORE_ONLY=0
-CLOUDVOL=0
+CLOUDVOL=1
 INSTALLER=mamba
 
-PYTHON_VERSION=3.7
+STUART_CREDENTIALS=1  # Non-portable stuff
 
-if [[ $(uname) == "Darwin" ]]; then
-    LEMON_BUILD=h1fadc39_3
-else
-    LEMON_BUILD=he9d42e9_3
-fi
+PYTHON_VERSION=3.10
 
 core_conda_pkgs=(
     "python=${PYTHON_VERSION}"
@@ -37,17 +36,17 @@ core_conda_pkgs=(
     pandas
     feather-format
     pytest
-    'vol2mesh>=0.1.post10'
-    'libdvid-cpp>=0.3.post117'
-    'neuclease>=0.4.post243'
-    'flyemflows>=0.5.post.dev424'
-    'neuprint-python>=0.4.14'
-    "lemon=1.3.1=${LEMON_BUILD}" # https://github.com/conda-forge/lemon-feedstock/issues/23
-    #dvid
+    'vol2mesh>=0.1.post20'
+    'libdvid-cpp>=0.4.post21'
+    'neuclease>=0.5'
+    'flyemflows>=0.5.post.dev523'
+    'neuprint-python>=0.4.25'
+    lemon
+    'dvid>=0.9.17'
 )
 
 optional_conda_pkgs=(
-    'graph-tool>=2.43'
+    'graph-tool>=2.45'
     umap-learn
     ngspice
     plotly
@@ -58,14 +57,14 @@ optional_conda_pkgs=(
     cython
     anytree
     pot
-    gensim
+    'gensim>=4.0'
 )
 
 # neuroglancer dependencies are all available via conda,
 # even though neuroglancer itself isn't.
 ng_conda_pkgs=(
-    'sockjs-tornado' # v1.0.7 is available via flyem-forge (and soon conda-forge)
-    tornado
+    'sockjs-tornado>=1.0.7'
+    'tornado>=6'
     'google-apitools'
     nodejs
 )
@@ -92,15 +91,17 @@ cloudvol_conda_pkgs=(
 )
 
 if [[ ! -z "${CORE_ONLY}" && ${CORE_ONLY} != "0" ]]; then
-    ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]}
+    ${INSTALLER} ${CONDA_CMD} -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]}
 elif [[ ! -z "${CLOUDVOL}" && ${CLOUDVOL} != "0" ]]; then
-    ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs[@]} ${cloudvol_conda_pkgs[@]}
+    ${INSTALLER} ${CONDA_CMD} -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs[@]} ${cloudvol_conda_pkgs[@]}
 else
-    ${INSTALLER} create -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs[@]}
+    ${INSTALLER} ${CONDA_CMD} -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs[@]}
 fi
 
-# This is related to my personal credentials files.  Not portable!
-#conda install -y -n ${ENV_NAME} $(ls ${WORKSPACE}/stuart-credentials/pkgs/stuart-credentials-*.tar.bz2 | tail -n1)
+if [[ ! -z "${STUART_CREDENTIALS}" && ${STUART_CREDENTIALS} != "0" ]]; then
+    # This is related to my personal credentials files.  Not portable!
+    ${INSTALLER} install -y -n ${ENV_NAME} $(ls ${WORKSPACE}/stuart-credentials/pkgs/stuart-credentials-*.tar.bz2 | tail -n1)
+fi
 
 set +x
 # https://github.com/conda/conda/issues/7980#issuecomment-492784093
@@ -125,7 +126,7 @@ fi
 pip_pkgs=(
     neuroglancer
     tensorstore
-    graspologic
+    #'graspologic>=2.0'  # Sadly, not yet available for python-3.10
 )
 
 if [[ ! -z "${CLOUDVOL}" && ${CLOUDVOL} != "0" ]]; then
