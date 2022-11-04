@@ -11,8 +11,8 @@ set -e
 
 WORKSPACE=/Users/bergs/workspace
 ENV_NAME=flyem-310
-CONDA_CMD=create
-#CONDA_CMD=install
+#CONDA_CMD=create
+CONDA_CMD=install
 
 DEVELOP_MODE=1
 CORE_ONLY=0
@@ -43,6 +43,9 @@ core_conda_pkgs=(
     'neuprint-python>=0.4.25'
     lemon
     'dvid>=0.9.17'
+    zarr
+    matplotlib
+    dill
 )
 
 optional_conda_pkgs=(
@@ -58,6 +61,18 @@ optional_conda_pkgs=(
     anytree
     pot
     'gensim>=4.0'
+    atomicwrites
+    beartype
+    brotli
+    fastremap   # Cool, there's a conda package for this...
+    future
+    multiprocess
+    orjson
+    pathos
+    pox
+    ppft
+    pysimdjson
+    zfpy # This is optional, but if something brings it in via pip, it breaks numcodecs and zarr.
 )
 
 # neuroglancer dependencies are all available via conda,
