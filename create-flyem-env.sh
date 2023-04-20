@@ -42,7 +42,7 @@ core_conda_pkgs=(
     pytest
     'vol2mesh>=0.1.post20'
     'libdvid-cpp>=0.4.post21'
-    'neuclease>=0.5'
+    'neuclease>=0.5.post70'
     'flyemflows>=0.5.post.dev523'
     'neuprint-python>=0.4.25'
     lemon
