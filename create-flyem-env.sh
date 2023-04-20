@@ -31,6 +31,10 @@ core_conda_pkgs=(
     matplotlib
     ipywidgets
     bokeh
+    selenium     # Required for rendering bokeh plot images, also for neuroglancer's video tool
+    firefox      # ditto
+    geckodriver  # ditto
+    datashader
     jupyter_bokeh
     hvplot
     pandas
@@ -56,6 +60,7 @@ optional_conda_pkgs=(
     line_profiler
     'google-cloud-sdk'
     'google-cloud-bigquery>=1.26.1'
+    crcmod  # optional dependency of gsutil rsync, for faster checksums
     pynrrd
     cython
     anytree
