@@ -11,8 +11,8 @@ set -e
 
 WORKSPACE=/Users/bergs/workspace
 ENV_NAME=flyem-310
-#CONDA_CMD=create
-CONDA_CMD=install
+CONDA_CMD=create
+#CONDA_CMD=install
 
 DEVELOP_MODE=1
 CORE_ONLY=0
