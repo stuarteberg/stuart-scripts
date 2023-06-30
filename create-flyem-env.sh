@@ -19,7 +19,7 @@ CORE_ONLY=0
 CLOUDVOL=1
 INSTALLER=mamba
 
-STUART_CREDENTIALS=1  # Non-portable stuff
+STUART_CREDENTIALS=0  # Non-portable stuff
 
 PYTHON_VERSION=3.10
 
@@ -172,6 +172,7 @@ fi
 
 if [[ ! -z "${DEVELOP_MODE}" && ${DEVELOP_MODE} != "0" ]]; then
 
+    # It is assumed you already have git repos for these in ${WORKSPACE}/
     develop_pkgs=(
         vol2mesh
         neuclease
@@ -188,7 +189,7 @@ if [[ ! -z "${DEVELOP_MODE}" && ${DEVELOP_MODE} != "0" ]]; then
         ${INSTALLER} install -y -n ${ENV_NAME} --only-deps -c flyem-forge -c conda-forge ${p}
     done
 
-    echo "Uninstalling the following packages re-installing them in 'develop' mode: ${develop_pkgs[@]}"
+    echo "Uninstalling the following packages and re-installing them in 'develop' mode: ${develop_pkgs[@]}"
 
     for p in ${develop_pkgs[@]}; do
         rm -rf ${CONDA_PREFIX}/lib/python${PYTHON_VERSION}/site-packages/${p}*
