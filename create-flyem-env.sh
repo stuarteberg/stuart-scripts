@@ -50,6 +50,8 @@ core_conda_pkgs=(
     zarr
     matplotlib
     dill
+    h5py
+    vigra
 )
 
 optional_conda_pkgs=(
