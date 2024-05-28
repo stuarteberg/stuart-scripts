@@ -4,31 +4,33 @@
 # 2020-08-14
 # Here's how to create my flyem development environment from scratch.
 #
-# Updated 2022-11
+# Updated 2024-05
 
 set -x
 set -e
 
 WORKSPACE=/Users/bergs/workspace
-ENV_NAME=flyem-310
-CONDA_CMD=create
-#CONDA_CMD=install
+ENV_NAME=flyem-312
+#CONDA_CMD=create
+CONDA_CMD=install
 
-DEVELOP_MODE=1
-CORE_ONLY=0
-CLOUDVOL=1
-INSTALLER=mamba
+DEVELOP_MODE=0
+CORE_CONDA_FORGE=1
+CORE_FLYEM=1
+OPTIONAL_CONDA_FORGE=1
+NEUROGLANCER=1
+CLOUDVOL=0
+INSTALLER=conda
 
 STUART_CREDENTIALS=0  # Non-portable stuff
 
-PYTHON_VERSION=3.10
+PYTHON_VERSION=3.12
 
 core_conda_pkgs=(
     "python=${PYTHON_VERSION}"
     ipython
     jupyterlab
     nodejs
-    matplotlib
     ipywidgets
     bokeh
     selenium     # Required for rendering bokeh plot images, also for neuroglancer's video tool
@@ -38,24 +40,28 @@ core_conda_pkgs=(
     jupyter_bokeh
     hvplot
     pandas
-    feather-format
     pytest
-    'vol2mesh>=0.1.post20'
-    'libdvid-cpp>=0.4.post21'
-    'neuclease>=0.5.post70'
-    'flyemflows>=0.5.post.dev523'
-    'neuprint-python>=0.4.25'
     lemon
-    'dvid>=0.9.17'
-    zarr
-    matplotlib
+    'zarr=2.18'
+    matplotlib-base
     dill
     h5py
     vigra
+    tensorstore
+)
+
+core_flyem_packages=(
+    'dvid>=1.0'
+    'vol2mesh>=0.1.post20'
+    'libdvid-cpp>=0.5.post4'
+    'neuclease>=0.6.post0.dev142'
+    'flyemflows>=0.5.post0.dev571'
+    'neuprint-python>=0.4.26'
 )
 
 optional_conda_pkgs=(
-    'graph-tool>=2.45'
+    graph-tool
+    #'graspologic>=2.0'  # Sadly, not yet available for python-3.12
     umap-learn
     ngspice
     plotly
@@ -69,6 +75,7 @@ optional_conda_pkgs=(
     pot
     'gensim>=4.0'
     atomicwrites
+    fastremap
     beartype
     brotli
     fastremap   # Cool, there's a conda package for this...
@@ -110,15 +117,32 @@ cloudvol_conda_pkgs=(
     python-dateutil
     tenacity
     zstandard
+    fastremap
 )
 
-if [[ ! -z "${CORE_ONLY}" && ${CORE_ONLY} != "0" ]]; then
-    ${INSTALLER} ${CONDA_CMD} -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]}
-elif [[ ! -z "${CLOUDVOL}" && ${CLOUDVOL} != "0" ]]; then
-    ${INSTALLER} ${CONDA_CMD} -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs[@]} ${cloudvol_conda_pkgs[@]}
-else
-    ${INSTALLER} ${CONDA_CMD} -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${core_conda_pkgs[@]} ${optional_conda_pkgs[@]} ${ng_conda_pkgs[@]}
+PACKAGES=()
+if [[ ! -z "${CORE_CONDA_FORGE}" && ${CORE_CONDA_FORGE} != "0" ]]; then
+    PACKAGES+=("${core_conda_pkgs[@]}")
 fi
+
+if [[ ! -z "${CORE_FLYEM}" && ${CORE_FLYEM} != "0" ]]; then
+    PACKAGES+=("${core_flyem_packages[@]}")
+fi
+
+if [[ ! -z "${OPTIONAL_CONDA_FORGE}" && ${OPTIONAL_CONDA_FORGE} != "0" ]]; then
+    PACKAGES+=("${optional_conda_pkgs[@]}")
+fi
+
+if [[ ! -z "${NEUROGLANCER}" && ${NEUROGLANCER} != "0" ]]; then
+    PACKAGES+=("${ng_conda_pkgs[@]}")
+fi
+
+if [[ ! -z "${CLOUDVOL}" && ${CLOUDVOL} != "0" ]]; then
+    PACKAGES+=("${cloudvol_conda_pkgs[@]}")
+fi
+
+
+${INSTALLER} ${CONDA_CMD} -y -n ${ENV_NAME} -c flyem-forge -c conda-forge ${PACKAGES[@]}
 
 if [[ ! -z "${STUART_CREDENTIALS}" && ${STUART_CREDENTIALS} != "0" ]]; then
     # This is related to my personal credentials files.  Not portable!
@@ -131,32 +155,21 @@ eval "$(conda shell.bash hook)"
 conda activate ${ENV_NAME}
 set -x
 
-jupyter nbextension enable --py widgetsnbextension
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
+pip_pkgs=()
 
-if [[ ! -z "${CORE_ONLY}" && ${CORE_ONLY} != "0" ]]; then
-    echo "Skipping plotly extensions"
-else
-    # plotly jupyterlab support
-    #
-    jupyter labextension install jupyterlab-plotly
-    jupyter labextension install @jupyter-widgets/jupyterlab-manager plotlywidget
+if [[ ! -z "${NEUROGLANCER}" && ${NEUROGLANCER} != "0" ]]; then
+    # These would all be pulled in by 'pip install neuroglancer cloud-volume',
+    # but I'll list the pip dependencies explicitly here for clarity's sake.
+    pip_pkgs+=(
+        neuroglancer
+    )
 fi
-
-# These would all be pulled in by 'pip install neuroglancer cloud-volume',
-# but I'll list the pip dependencies explicitly here for clarity's sake.
-pip_pkgs=(
-    neuroglancer
-    tensorstore
-    #'graspologic>=2.0'  # Sadly, not yet available for python-3.10
-)
 
 if [[ ! -z "${CLOUDVOL}" && ${CLOUDVOL} != "0" ]]; then
     pip_pkgs+=(
         cloud-volume # 2.0.0
         'cloud-files>=0.9.2'
         'compressed-segmentation>=1.0.0'
-        'fastremap>=1.9.2'
         'fpzip>=1.1.3'
         DracoPy
         posix-ipc
@@ -164,8 +177,8 @@ if [[ ! -z "${CLOUDVOL}" && ${CLOUDVOL} != "0" ]]; then
     )
 fi
 
-if [[ ! -z "${CORE_ONLY}" && ${CORE_ONLY} != "0" ]]; then
-    echo "Skipping optional pip installs, including neuroglancer"
+if [ ${#pip_pkgs[@]} -eq 0 ]; then
+    echo "No pip packages to install"
 else
     pip install ${pip_pkgs[@]}
 fi
