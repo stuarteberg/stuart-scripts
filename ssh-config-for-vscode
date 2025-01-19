@@ -1,0 +1,10 @@
+# Janelia cluster nodes should use port 2222
+Host h??u??.int.janelia.org e??u??.int.janelia.org
+  Port 2222
+  ForwardAgent yes
+  AddKeysToAgent yes
+  UseKeychain yes
+  IdentityFile ~/.ssh/id_rsa
+  PermitLocalCommand yes
+
+Include ~/.ssh/config

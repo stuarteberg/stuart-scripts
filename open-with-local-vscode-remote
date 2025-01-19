@@ -53,17 +53,71 @@
 # Put this in your remote ~/.bashrc
 #
 
+# Function to recursively find all children of a process
+get_children() {
+    local pid=$1
+    local children=$(pgrep -P "$pid")  # Find immediate children of the given PID
+    for child in $children; do
+        echo -n "$child "  # Print the child PID on the same line
+        get_children "$child"  # Recursively find its children
+    done
+}
+
+# Main function to find and print all child PIDs of a given parent PID
+find_children_pids() {
+    if [ -z "$1" ]; then
+        echo "Usage: find_children_pids <PID>"
+        return 1
+    fi
+
+    local target_pid=$1
+    # Print all child PIDs in one line
+    get_children "$target_pid"
+    echo  # Final newline
+}
+
 # Set this to the name of your remote machine,
 # which will be serving the files you want to edit.
 # (In my case, the machine is named 'submit'.)
-DEFAULT_REMOTE_MACHINE_FOR_VSCODE=submit
+DEFAULT_REMOTE_MACHINE_FOR_VSCODE='$(uname -n)'
 
-localcode() (
+localcode() {
     # Tell zsh to use bash-style arrays
     setopt ksh_arrays 2> /dev/null || true
 
     CMD=ITERM-TRIGGER-open-with-local-vscode-remote
-    MACHINE=${LOCALCODE_MACHINE-${DEFAULT_REMOTE_MACHINE_FOR_VSCODE}}
+    DEFAULT_MACHINE=$(eval echo ${DEFAULT_REMOTE_MACHINE_FOR_VSCODE})
+
+    # Don't run on janelia's login nodes or submit, run on submit and don't kill sshd.
+    if [[ $DEFAULT_MACHINE =~ ^e02u30.*$ || $DEFAULT_MACHINE =~ ^e02u31.*$ ]]; then
+        DEFAULT_MACHINE="submit.int.janelia.org"
+    fi
+
+    MACHINE=${LOCALCODE_MACHINE-${DEFAULT_MACHINE}}
+
+    #
+    # To use this properly, your local machine should have the following ssh configuration,
+    # so that VSCode can connect via port 2222 instead of the default port 22.
+    #
+    # Host h??u??.int.janelia.org e??u??.int.janelia.org
+    #   Port 2222
+    #   <and other settings here>
+    #
+    if [[ -z "${LOCALCODE_MACHINE}" && ! -z "${LSB_JOBID}" ]]; then
+        # Launch custom ssh server on port 2222
+        SSHD_PORT=$(grep -Po 'Port\s+\K[0-9]+[^#]' ~/.ssh/stuart_sshd_config)
+        echo "Launching sshd on port ${SSHD_PORT}"
+
+        /usr/sbin/sshd -f ~/.ssh/stuart_sshd_config -D >> ~/.ssh/stuart_sshd.log 2>&1 &
+        SSHD_PID=$!
+
+        echo "Setting trap to kill sshd and all its children on exit"
+        trap "echo 'Killing sshd and its children: ${SSHD_PID}'; \
+            children=\$(find_children_pids ${SSHD_PID}); \
+            echo \${children}; \
+            kill \${SSHD_PID} \${children}" EXIT
+        fi
+
     FILENAMES=( "$@" )
 
     if [[ ${#FILENAMES[@]} == 0 ]]; then
@@ -89,7 +143,7 @@ localcode() (
     fi
 
     echo ${CMD} ${FTYPE} ${MACHINE} ${FILENAMES[@]}
-)
+}
 export -f localcode
 
 #
@@ -134,5 +188,7 @@ trigger_vscode_remote_editing() (
         exit 1
     fi
 )
+
+export -f trigger_vscode_remote_editing
 
 trigger_vscode_remote_editing "$@"
