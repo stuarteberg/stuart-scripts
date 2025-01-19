@@ -1,0 +1,2 @@
+#!/bin/bash
+_json_pretty.py $1 | bat -l json
