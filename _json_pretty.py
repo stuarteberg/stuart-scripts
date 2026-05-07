@@ -69,6 +69,9 @@ def dump_json(obj, f=None, indent=2, *, convert_nans=False, nullval="NaN", unspl
         elif unsplit_int_lists:
             json_text = unsplit_json_int_lists(json_text)
 
+        if not json_text.endswith('\n'):
+            json_text += '\n'
+
         if isinstance(f, str):
             with open(f, 'w') as f:
                 f.write(json_text)

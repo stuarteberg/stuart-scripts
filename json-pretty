@@ -1,2 +1,2 @@
 #!/bin/bash
-_json_pretty.py $1 | bat -p -l json
+bat --style=plain -l json <(_json_pretty.py "$1")
