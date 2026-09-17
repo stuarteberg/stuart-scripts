@@ -1,5 +1,5 @@
 # Janelia cluster nodes should use port 2222
-Host h??u??.int.janelia.org e??u??.int.janelia.org
+Host h??u??.int.janelia.org e??u??.int.janelia.org i??u??.int.janelia.org
   Port 2222
   ForwardAgent yes
   AddKeysToAgent yes
